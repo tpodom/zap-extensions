@@ -291,7 +291,8 @@ public class GraphQlGenerator {
                         requestor.sendQuery(
                                 query.toString(), variables.toString(), param.getRequestMethod());
                     }
-                } else if (depth < param.getMaxQueryDepth()) {
+                } else if (depth < param.getMaxQueryDepth() - 1
+                        || (depth == param.getMaxQueryDepth() - 1 && hasLeaf(fieldType))) {
                     query.append(field.getName()).append(' ');
                     variableName.append(field.getName()).append('_');
                     addArguments(query, variables, variableName, field);
@@ -329,6 +330,18 @@ public class GraphQlGenerator {
             }
             query.append("} ");
         }
+    }
+
+    private boolean hasLeaf(GraphQLType type) {
+        if (type instanceof GraphQLObjectType) {
+            GraphQLObjectType object = (GraphQLObjectType) type;
+            List<GraphQLFieldDefinition> fields = object.getFieldDefinitions();
+            return fields.stream()
+                    .anyMatch(
+                            (GraphQLFieldDefinition field) ->
+                                    GraphQLTypeUtil.isLeaf(field.getType()));
+        }
+        return false;
     }
 
     private void addArguments(
